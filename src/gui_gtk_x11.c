@@ -53,7 +53,8 @@
 # include <gnome.h>
 # include "version.h"
 // missing prototype in bonobo-dock-item.h
-extern void bonobo_dock_item_set_behavior(BonoboDockItem *dock_item, BonoboDockItemBehavior beh);
+extern void bonobo_dock_item_set_behavior(BonoboDockItem *dock_item,
+	BonoboDockItemBehavior beh);
 #endif
 
 #if defined(FEAT_GUI_GTK)
@@ -2763,9 +2764,12 @@ mainwin_realize(GtkWidget *widget UNUSED, gpointer data UNUSED)
 	    GList *icons = NULL;
 	    GList *item = NULL;
 
-	    icons = g_list_prepend(icons, pixbuf_new_from_png_data(vim16x16_png, vim16x16_png_len));
-	    icons = g_list_prepend(icons, pixbuf_new_from_png_data(vim32x32_png, vim32x32_png_len));
-	    icons = g_list_prepend(icons, pixbuf_new_from_png_data(vim48x48_png, vim48x48_png_len));
+	    icons = g_list_prepend(icons,
+		    pixbuf_new_from_png_data(vim16x16_png, vim16x16_png_len));
+	    icons = g_list_prepend(icons,
+		    pixbuf_new_from_png_data(vim32x32_png, vim32x32_png_len));
+	    icons = g_list_prepend(icons,
+		    pixbuf_new_from_png_data(vim48x48_png, vim48x48_png_len));
 
 	    gtk_window_set_icon_list(GTK_WINDOW(gui.mainwin), icons);
 	    for (item = icons; item != NULL; item = item->next)
@@ -2787,7 +2791,8 @@ mainwin_realize(GtkWidget *widget UNUSED, gpointer data UNUSED)
 	setup_save_yourself();
 
 #ifdef FEAT_CLIENTSERVER
-    if (clientserver_method == CLIENTSERVER_METHOD_X11 && gui_mch_get_display())
+    if (clientserver_method == CLIENTSERVER_METHOD_X11
+	    && gui_mch_get_display())
     {
 	if (serverName == NULL && serverDelayedStartName != NULL)
 	{
