@@ -6211,24 +6211,54 @@ gui_gtk_draw_string(int row, int col, char_u *s, int len, int flags)
 
 #if GTK_CHECK_VERSION(3,0,0)
 static cairo_region_t *dirty_region = NULL;
+static cairo_rectangle_int_t pending_damage;
+static bool pending_damage_active = false;
+
+    static void
+commit_pending_damage(void)
+{
+    if (!pending_damage_active)
+	return;
+
+    if (dirty_region == NULL)
+	dirty_region = cairo_region_create_rectangle(&pending_damage);
+    else
+	cairo_region_union_rectangle(dirty_region, &pending_damage);
+    pending_damage_active = false;
+}
 
     static void
 queue_draw_area(int x, int y, int width, int height)
 {
-    cairo_rectangle_int_t rect;
+    cairo_rectangle_int_t rect = {x, y, width, height};
 
     if (width <= 0 || height <= 0 || gui.drawarea == NULL)
 	return;
 
-    rect.x = x;
-    rect.y = y;
-    rect.width = width;
-    rect.height = height;
+    if (!pending_damage_active)
+    {
+	pending_damage = rect;
+	pending_damage_active = true;
+	return;
+    }
 
-    if (dirty_region == NULL)
-	dirty_region = cairo_region_create_rectangle(&rect);
-    else
-	cairo_region_union_rectangle(dirty_region, &rect);
+    // Merge consecutive touching or overlapping runs on the same row.
+    if (rect.y == pending_damage.y && rect.height == pending_damage.height
+	    && rect.x <= pending_damage.x + pending_damage.width
+	    && rect.x + rect.width >= pending_damage.x)
+    {
+	int left = MIN(pending_damage.x, rect.x);
+	int right = MAX(pending_damage.x + pending_damage.width,
+		rect.x + rect.width);
+
+	pending_damage.x = left;
+	pending_damage.width = right - left;
+	return;
+    }
+
+    commit_pending_damage();
+    pending_damage = rect;
+    pending_damage_active = true;
 }
 #endif
 
@@ -6929,6 +6959,7 @@ gui_mch_flush(void)
        gdk_display_flush(gtk_widget_get_display(gui.mainwin));
        return;
 #endif
+    commit_pending_damage();
     if (dirty_region != NULL && gui.drawarea != NULL)
     {
 	gtk_widget_queue_draw_region(gui.drawarea, dirty_region);
