@@ -5877,6 +5877,17 @@ setup_zero_width_cluster(PangoItem *item, PangoGlyphInfo *glyph,
 
 #if GTK_CHECK_VERSION(3,0,0)
     static void
+draw_cell_background(int row, int col, int num_cells, cairo_t *cr)
+{
+    cairo_set_source_rgba(cr,
+	    gui.bgcolor->red, gui.bgcolor->green, gui.bgcolor->blue,
+	    gui.bgcolor->alpha);
+    cairo_rectangle(cr, FILL_X(col), FILL_Y(row),
+	    num_cells * gui.char_width, gui.char_height);
+    cairo_fill(cr);
+}
+
+    static void
 draw_glyph_string(int row, int col, int num_cells, int flags,
 		  PangoFont *font, PangoGlyphString *glyphs,
 		  cairo_t *cr)
@@ -5889,13 +5900,7 @@ draw_glyph_string(int row, int col, int num_cells, int flags,
     if (!(flags & DRAW_TRANSP))
     {
 #if GTK_CHECK_VERSION(3,0,0)
-	cairo_set_source_rgba(cr,
-		gui.bgcolor->red, gui.bgcolor->green, gui.bgcolor->blue,
-		gui.bgcolor->alpha);
-	cairo_rectangle(cr,
-			FILL_X(col), FILL_Y(row),
-			num_cells * gui.char_width, gui.char_height);
-	cairo_fill(cr);
+	draw_cell_background(row, col, num_cells, cr);
 #else
 	gdk_gc_set_foreground(gui.text_gc, gui.bgcolor);
 
@@ -6297,6 +6302,28 @@ gui_gtk_draw_string_ext(
     gdk_gc_set_clip_rectangle(gui.text_gc, &area);
 #endif
 
+    glyphs = NULL;
+
+    for (i = 0; i < len && s[i] == ' '; ++i)
+	;
+    if (i == len)
+    {
+#if GTK_CHECK_VERSION(3,0,0)
+	if (!(flags & DRAW_TRANSP))
+	    draw_cell_background(row, col, len, cr);
+#else
+	if (!(flags & DRAW_TRANSP))
+	{
+	    gdk_gc_set_foreground(gui.text_gc, gui.bgcolor);
+	    gdk_draw_rectangle(gui.drawarea->window, gui.text_gc, TRUE,
+		    FILL_X(col), FILL_Y(row),
+		    len * gui.char_width, gui.char_height);
+	}
+#endif
+	column_offset = len;
+	goto skipitall;
+    }
+
     glyphs = pango_glyph_string_new();
 
     /*
@@ -6510,7 +6537,8 @@ skipitall:
     draw_under(flags, row, col, column_offset);
 #endif
 
-    pango_glyph_string_free(glyphs);
+    if (glyphs != NULL)
+	pango_glyph_string_free(glyphs);
 
 #if GTK_CHECK_VERSION(3,0,0)
     cairo_destroy(cr);
