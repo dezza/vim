@@ -812,21 +812,38 @@ draw_event(GtkWidget *widget UNUSED,
 #  define GUI_GTK_SURFACE_CONTENT CAIRO_CONTENT_COLOR_ALPHA
 # endif
 
+    static void
+resize_drawarea_surface(GtkWidget *widget, int width, int height)
+{
+    cairo_surface_t *surface;
+
+    surface = gdk_window_create_similar_surface(
+	    gtk_widget_get_window(widget),
+	    GUI_GTK_SURFACE_CONTENT,
+	    width, height);
+
+    if (gui.surface != NULL)
+    {
+	cairo_t *cr = cairo_create(surface);
+
+	cairo_set_source_surface(cr, gui.surface, 0, 0);
+	cairo_paint(cr);
+	cairo_destroy(cr);
+	cairo_surface_destroy(gui.surface);
+    }
+
+    gui.surface = surface;
+}
+
 # if GTK_CHECK_VERSION(3,10,0)
     static gboolean
 scale_factor_event(GtkWidget *widget,
 		   GParamSpec* pspec UNUSED,
 		   gpointer   user_data UNUSED)
 {
-    if (gui.surface != NULL)
-	cairo_surface_destroy(gui.surface);
-
     int	    w, h;
     gtk_window_get_size(GTK_WINDOW(gui.mainwin), &w, &h);
-    gui.surface = gdk_window_create_similar_surface(
-	    gtk_widget_get_window(widget),
-	    GUI_GTK_SURFACE_CONTENT,
-	    w, h);
+    resize_drawarea_surface(widget, w, h);
 
     int	    usable_height = h;
     if (gtk_socket_id != 0)
@@ -3041,13 +3058,7 @@ drawarea_configure_event_cb(GtkWidget	      *widget,
     cur_width = event->width;
     cur_height = event->height;
 
-    if (gui.surface != NULL)
-	cairo_surface_destroy(gui.surface);
-
-    gui.surface = gdk_window_create_similar_surface(
-	    gtk_widget_get_window(widget),
-	    GUI_GTK_SURFACE_CONTENT,
-	    event->width, event->height);
+    resize_drawarea_surface(widget, event->width, event->height);
 
     gtk_widget_queue_draw(widget);
 
