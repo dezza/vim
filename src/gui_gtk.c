@@ -1694,7 +1694,7 @@ dialog_key_press_event_cb(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE; // continue emission
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
+# ifdef GDK_WINDOWING_WAYLAND
     static void
 dialog_parent_active_cb(
 	GtkWindow *parent,
@@ -1705,7 +1705,7 @@ dialog_parent_active_cb(
 	    && gtk_widget_get_mapped(GTK_WIDGET(dialog)))
 	gtk_window_present_with_time(dialog, gtk_get_current_event_time());
 }
-#endif
+# endif
 
     int
 gui_mch_dialog(int	type,	    // type of dialog
@@ -1788,13 +1788,13 @@ gui_mch_dialog(int	type,	    // type of dialog
     // Show the mouse pointer if it's currently hidden.
     gui_mch_mousehide(FALSE);
 
-#ifdef GDK_WINDOWING_WAYLAND
+# ifdef GDK_WINDOWING_WAYLAND
     if (gui.is_wayland)
 	g_signal_connect_object(
 		G_OBJECT(gui.mainwin), "notify::is-active",
 		G_CALLBACK(dialog_parent_active_cb),
 		G_OBJECT(dialog), 0);
-#endif
+# endif
 
     response = gtk_dialog_run(GTK_DIALOG(dialog));
 
