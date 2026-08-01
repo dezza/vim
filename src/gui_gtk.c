@@ -1710,6 +1710,11 @@ gui_mch_dialog(int	type,	    // type of dialog
     DialogInfo  dialoginfo;
 
     ++gui.dialogs_active;
+    fprintf(stderr,
+	    "dialog open: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
 
     dialog = create_message_dialog(type, title, message);
     dialoginfo.dialog = GTK_DIALOG(dialog);
@@ -1796,6 +1801,11 @@ gui_mch_dialog(int	type,	    // type of dialog
 	gtk_widget_destroy(dialog);
     }
 
+    fprintf(stderr,
+	    "dialog close: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
     if (gui.dialogs_active > 0)
 	--gui.dialogs_active;
     return response > 0 ? response : 0;

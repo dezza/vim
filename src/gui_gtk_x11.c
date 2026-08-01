@@ -1089,6 +1089,11 @@ focus_in_event(GtkWidget *widget,
 	       gpointer data UNUSED)
 {
 #ifdef FEAT_GUI_DIALOG
+    fprintf(stderr,
+	    "focus in: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
     if (gui.dialog_focus_pending > 0)
     {
 	--gui.dialog_focus_pending;
@@ -1099,6 +1104,11 @@ focus_in_event(GtkWidget *widget,
     else
 #endif
 	gui_focus_change(TRUE);
+    fprintf(stderr,
+	    "focus in done: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
 
     if (blink_state == BLINK_NONE)
 	gui_mch_start_blink();
@@ -1116,12 +1126,25 @@ focus_out_event(GtkWidget *widget UNUSED,
 		GdkEventFocus *event UNUSED,
 		gpointer data UNUSED)
 {
-#ifdef FEAT_GUI_DIALOG
+    fprintf(stderr,
+	    "focus out: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
     if (gui.dialogs_active > 0)
 	++gui.dialog_focus_pending;
-#endif
+    fprintf(stderr,
+	    "focus out queued: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
 
     gui_focus_change(FALSE);
+    fprintf(stderr,
+	    "focus out done: active=%d pending=%d hold=%d in_focus=%d\n",
+	    gui.dialogs_active, gui.dialog_focus_pending,
+	    hold_gui_events, gui.in_focus);
+    fflush(stderr);
 
     if (blink_state != BLINK_NONE)
 	gui_mch_stop_blink(TRUE);
@@ -1857,6 +1880,14 @@ process_motion_notify(int x, int y, GdkModifierType state)
     // translate modifier coding between the main engine and GTK
     vim_modifiers = modifiers_gdk2mouse(state);
 
+    // no event
+    fprintf(stderr,
+	    "button press: active=%d pending=%d in_focus=%d "
+	    "button=%u state=%u drag=%u\n",
+	    gui.dialogs_active, gui.dialog_focus_pending, gui.in_focus,
+	    button, state, dragging_button_state);
+    fflush(stderr);
+
     // inform the editor engine about the occurrence of this event
     gui_send_mouse_event(button, x, y, FALSE, vim_modifiers);
 
@@ -2084,7 +2115,12 @@ button_press_event(GtkWidget *widget,
 #endif
 
     vim_modifiers = modifiers_gdk2mouse(event->state);
-
+    fprintf(stderr,
+	    "button press: active=%d pending=%d in_focus=%d "
+	    "button=%u state=%u drag=%u\n",
+	    gui.dialogs_active, gui.dialog_focus_pending, gui.in_focus,
+	    event->button, event->state, dragging_button_state);
+    fflush(stderr);
     gui_send_mouse_event(button, x, y, repeated_click, vim_modifiers);
 
     return TRUE;
@@ -2228,6 +2264,12 @@ button_release_event(GtkWidget *widget UNUSED,
 
     vim_modifiers = modifiers_gdk2mouse(event->state);
 
+    fprintf(stderr,
+	    "button press: active=%d pending=%d in_focus=%d "
+	    "button=%u state=%u drag=%u\n",
+	    gui.dialogs_active, gui.dialog_focus_pending, gui.in_focus,
+	    event->button, event->state, dragging_button_state);
+    fflush(stderr);
     gui_send_mouse_event(MOUSE_RELEASE, x, y, FALSE, vim_modifiers);
 
     switch (event->button)
