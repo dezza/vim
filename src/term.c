@@ -3173,6 +3173,20 @@ termrequest_any_pending(void)
     return FALSE;
 }
 
+    static void
+termrequest_wait_pending(void)
+{
+    int count = 0;
+
+    while (termrequest_any_pending() && count++ < 10 && !got_int)
+    {
+	(void)vpeekc_nomap();
+	if (termrequest_any_pending())
+	    ui_delay(10L, FALSE);
+    }
+    check_for_codes_from_term();
+}
+
 static int winpos_x = -1;
 static int winpos_y = -1;
 static int did_request_winpos = 0;
@@ -4006,6 +4020,9 @@ settmode(tmode_T tmode)
      */
     if (tmode != cur_tmode)
     {
+	if (tmode != TMODE_RAW)
+	    send_t_RK = FALSE;
+
 #ifdef FEAT_TERMRESPONSE
 # ifdef FEAT_GUI
 	if (!gui.in_use && !gui.starting)
@@ -4014,9 +4031,10 @@ settmode(tmode_T tmode)
 	    // May need to check for T_CRV response and termcodes, it
 	    // doesn't work in Cooked mode, an external program may get
 	    // them.
-	    if (tmode != TMODE_RAW && termrequest_any_pending())
-		(void)vpeekc_nomap();
-	    check_for_codes_from_term();
+	    if (tmode != TMODE_RAW)
+		termrequest_wait_pending();
+	    else
+		check_for_codes_from_term();
 	}
 #endif
 	if (tmode != TMODE_RAW)
