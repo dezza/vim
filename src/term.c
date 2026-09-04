@@ -3985,6 +3985,7 @@ may_send_t_RK(void)
 	    && !exiting)
     {
 	send_t_RK = FALSE;
+	LOG_TR1("Sending T_CRK request");
 	out_str(T_CRK);
 #ifdef FEAT_TERMRESPONSE
 	if (*T_CRK != NUL)
@@ -5779,6 +5780,7 @@ handle_csi(
     {
 	if (arg[0] == 4 && argc == 2)
 	{
+	    LOG_TRN("Received T_CRK response: %s", tp);
 	    modify_otherkeys_state = arg[1] == 2 ? MOKS_ENABLED : MOKS_OFF;
 #ifdef FEAT_TERMRESPONSE
 	    if (rk_status.tr_progress == STATUS_SENT)
@@ -5942,6 +5944,7 @@ handle_csi(
     // Kitty keyboard protocol status response: CSI ? flags u
     else if (first == '?' && argc == 1 && trail == 'u')
     {
+	LOG_TRN("Received T_CRK response: %s", tp);
 #ifdef FEAT_TERMRESPONSE
 	if (rk_status.tr_progress == STATUS_SENT)
 	    rk_status.tr_progress = STATUS_GOT;
@@ -6058,8 +6061,9 @@ check_for_color_response(char_u *resp, int len)
 			char *new_bg_val = (3 * '6' < *tp_r + *tp_g +
 					     *tp_b) ? "light" : "dark";
 
-			LOG_TRN("Received RBG response: r=%d g=%d b=%d", rval, gval, bval);
 #ifdef FEAT_TERMRESPONSE
+			LOG_TRN("Received RBG response: r=%d g=%d b=%d",
+						      rval, gval, bval);
 			rbg_status.tr_progress = STATUS_GOT;
 			bg_r = rval;
 			bg_g = gval;
