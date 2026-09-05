@@ -67,7 +67,7 @@ static int term_is_builtin(char_u *name);
 static int term_7to8bit(char_u *p);
 static void accept_modifiers_for_function_keys(void);
 
-#if 1  // Change to 1 to enable ch_log() calls for termresponse debugging.
+#if defined(FEAT_EVAL) && 1  // Set 0 to disable termresponse logging.
 # define DEBUG_TERMRESPONSE
 # define LOG_TR1(str) \
 		ch_log(NULL, "TermResp: %s " str, \
@@ -4062,6 +4062,13 @@ settmode(tmode_T tmode)
 	    }
 	}
 	out_flush();
+#if defined(UNIX) && defined(TCIFLUSH)
+	if (tmode != TMODE_RAW)
+	{
+	    mch_delay(100L, 0);
+	    tcflush(fileno(stdin), TCIFLUSH);
+	}
+#endif
 	mch_settmode(tmode);	// machine specific function
 	cur_tmode = tmode;
 	if (tmode == TMODE_RAW)
