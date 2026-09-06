@@ -4024,20 +4024,6 @@ settmode(tmode_T tmode)
 	if (tmode != TMODE_RAW)
 	    send_t_RK = FALSE;
 
-#ifdef FEAT_TERMRESPONSE
-# ifdef FEAT_GUI
-	if (!gui.in_use && !gui.starting)
-# endif
-	{
-	    // May need to check for T_CRV response and termcodes, it
-	    // doesn't work in Cooked mode, an external program may get
-	    // them.
-	    if (tmode != TMODE_RAW)
-		termrequest_wait_pending();
-	    else
-		check_for_codes_from_term();
-	}
-#endif
 	if (tmode != TMODE_RAW)
 	    mch_setmouse(FALSE);	// switch mouse off
 
@@ -4051,6 +4037,11 @@ settmode(tmode_T tmode)
 
 	    if (tmode != TMODE_RAW)
 	    {
+#if defined(UNIX) || defined(VMS)
+		// Stop focus events before echoing input.
+		if (p_ek && *T_FD != NUL)
+		    out_str(T_FD);
+#endif
 		out_str(T_BD);	// disable bracketed paste mode
 		out_str_t_TE();	// possibly disables modifyOtherKeys
 	    }
@@ -4058,18 +4049,31 @@ settmode(tmode_T tmode)
 	    {
 		out_str_t_BE();	// enable bracketed paste mode (should
 				// be before mch_settmode().
-		out_str_t_TI();	// possibly enables modifyOtherKeys
 	    }
 	}
 	out_flush();
-#if defined(UNIX) && defined(TCIFLUSH)
-	if (tmode != TMODE_RAW)
+#ifdef FEAT_TERMRESPONSE
+# ifdef FEAT_GUI
+	if (!gui.in_use && !gui.starting)
+# endif
 	{
-	    mch_delay(100L, 0);
-	    tcflush(fileno(stdin), TCIFLUSH);
+	    // Drain resp while input is still raw.
+	    if (tmode != TMODE_RAW)
+		termrequest_wait_pending();
+	    else
+		check_for_codes_from_term();
 	}
 #endif
 	mch_settmode(tmode);	// machine specific function
+	if (termcap_active && tmode == TMODE_RAW
+		&& cur_tmode != TMODE_SLEEP)
+	{
+	    out_str_t_TI();	// enable keyboard protocols after raw mode
+#if defined(UNIX) || defined(VMS)
+	    if (p_ek && *T_FE != NUL)
+		out_str(T_FE);	// enable focus events after raw mode
+#endif
+	}
 	cur_tmode = tmode;
 	if (tmode == TMODE_RAW)
 	    setmouse();		// may switch mouse on
